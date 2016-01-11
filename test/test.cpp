@@ -43,10 +43,9 @@ static_assert(sizeof(char) == sizeof(FLAC__byte), "invalid char size");
 FLAC__StreamDecoderReadStatus
     FLACStreamerFromFile::read_callback(FLAC__byte * buffer, size_t * nbytes) {
   if (nbytes and *nbytes > 0) {
-    /* FIXME: cast to signed char ok? */
     input.read(reinterpret_cast<char *>(buffer), *nbytes);
     *nbytes = input.gcount();
-    if (!input) {
+    if (input.fail()) {
       return FLAC__STREAM_DECODER_READ_STATUS_ABORT;
     } else if (input.eof()) {
       return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;

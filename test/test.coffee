@@ -1,4 +1,6 @@
-spawn = require('child_process').spawn
-Speaker = require 'speaker'
+FLACStream = require "#{__dirname}/../"
 
-spawn("#{__dirname}/test").stdout.pipe new Speaker
+stream = new FLACStream
+console.log (stream instanceof require('stream').Transform)
+stream.on 'bam', (arg) -> console.log "---#{arg}---"
+console.log stream._flush()
