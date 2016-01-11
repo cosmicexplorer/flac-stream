@@ -1,0 +1,11 @@
+{
+  "name": "tune-server",
+  "version": "0.0.0",
+  "license": "GPL-3.0",
+  "repository": "git@github.com:cosmicexplorer/flac-stream.git",
+  "main": "main.js",
+  "devDependencies": {
+    "coffee-script": "^1.10.0",
+    "speaker": "^0.2.6"
+  }
+}
