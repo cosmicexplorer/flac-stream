@@ -7,7 +7,7 @@ AlignConsecutiveAssignments: true
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortLoopsOnASingleLine: true
 AllowShortBlocksOnASingleLine: true
-AllowShortFunctionsOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: true
 AlwaysBreakAfterDefinitionReturnType: false
 AlwaysBreakBeforeMultilineStrings: false

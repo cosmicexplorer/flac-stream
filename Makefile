@@ -1,6 +1,7 @@
-.PHONY: all test clean distclean
+.PHONY: all testc test clean distclean
 
 CXX := g++
+CXX_FLAGS := -Wall -Wextra -Werror -std=c++17
 
 NPM_DIR := node_modules
 NPM_BIN := $(NPM_DIR)/.bin
@@ -27,18 +28,18 @@ TEST_COFFEE_BIN := $(TEST_DIR)/test.coffee
 
 all: $(COFFEE_OUT) $(CPP_OUT)
 
-test: all $(TEST_COFFEE_OUT) $(TEST_CPP_BIN)
+testc: all $(TEST_COFFEE_OUT) $(TEST_CPP_BIN)
+test: testc
 	$(COFFEE_CC) $(TEST_COFFEE_BIN)
 
 %.js: %.coffee $(COFFEE_CC)
 	$(COFFEE_CC) -bc --no-header $<
 
 %.o: %.cpp
-	$(CXX) -c $< -o $@
+	$(CXX) -c $< -o $@ $(CXX_FLAGS)
 
 $(TEST_CPP_BIN): $(TEST_CPP_OUT) $(FLAC_SO)
-	$(CXX) $^ -o $@ -L$(FLAC_SO_DIR) $(addprefix -l,$(LIBS))
-
+	$(CXX) $^ -o $@ -L$(FLAC_SO_DIR) $(addprefix -l,$(LIBS)) $(CXX_FLAGS)
 
 $(COFFEE_CC):
 	npm install
