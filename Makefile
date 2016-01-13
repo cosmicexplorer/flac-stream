@@ -57,8 +57,9 @@ $(NODE_CXX_MAKEFILE): $(NODE_BINDINGS)
 $(NODE_CXX_MODULE): $(NODE_CXX_MAKEFILE) $(CPP_IN)
 	node-gyp build $(NODE_GYP_FLAGS)
 
+# TODO: do we link to this one, or just require libflac to be installed?
 $(TEST_CPP_BIN): $(TEST_CPP_OUT) $(FLAC_SO)
-	$(CXX) $^ -o $@ -L$(FLAC_SO_DIR) $(addprefix -l,$(LIBS)) $(CXX_FLAGS)
+	$(CXX) $^ -o $@ $(addprefix -l,$(LIBS)) $(CXX_FLAGS)
 
 $(COFFEE_CC):
 	npm install
