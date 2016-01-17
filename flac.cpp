@@ -3,6 +3,9 @@
 #include <node_buffer.h>
 #include "flac.h"
 
+/* TODO: remove this! */
+#include <iostream>
+
 static_assert(sizeof(char) == sizeof(FLAC__byte), "invalid char size");
 static_assert(sizeof(FLAC__byte) == 1, "invalid byte size");
 
@@ -27,9 +30,10 @@ Persistent<Function> FLACStreamer::Constructor;
 constexpr size_t FLACStreamer::MAX_PUSH_LENGTH = 10e4;
 
 FLACStreamer::FLACStreamer()
-    : metadata_has_been_read(false), metadata_sent(false),
-      is_done_processing_read(false), is_done_processing_write(false),
-      in_queue_cv(), out_queue_cv(), do_quit(false), is_err(false) {
+    : FLAC::Decoder::Stream(), metadata_has_been_read(false),
+      metadata_sent(false), is_done_processing_read(false),
+      is_done_processing_write(false), in_queue_cv(), out_queue_cv(),
+      do_quit(false), is_err(false) {
   decoder_thread = std::thread(do_decode, this);
 }
 
@@ -40,8 +44,13 @@ FLACStreamer::~FLACStreamer() {
 
 void FLACStreamer::do_decode(FLACStreamer * _this) {
   try {
+    auto init_status = _this->init();
+    if (FLAC__STREAM_DECODER_INIT_STATUS_OK != init_status) {
+      throw std::runtime_error(
+          FLAC__StreamDecoderErrorStatusString[init_status]);
+    }
     _this->process_until_end_of_stream();
-  } catch (finished_decoding_event & ev) {
+  } catch (finished_decoding_event &) {
   } catch (...) {
     auto eptr = std::current_exception();
     try {
@@ -49,7 +58,6 @@ void FLACStreamer::do_decode(FLACStreamer * _this) {
     } catch (const std::exception & ex) { _this->errstr = ex.what(); }
     _this->is_err.store(true);
   }
-  /* TODO: set error bit/string if other exception caught, emit error */
   _this->is_done_processing_write.store(true);
   _this->out_queue_cv.notify_one();
 }
@@ -73,6 +81,10 @@ void FLACStreamer::New(const FunctionCallbackInfo<Value> & args) {
   if (args.IsConstructCall()) {
     FLACStreamer * obj = new FLACStreamer();
     obj->Wrap(args.This());
+    auto opts           = args[0];
+    auto super          = args[1]->ToObject().As<Function>();
+    Local<Value> argv[] = {opts};
+    super->Call(args.This(), 1, argv);
     args.GetReturnValue().Set(args.This());
   } else {
     Local<Function> cons = Local<Function>::New(isolate, Constructor);
@@ -114,7 +126,11 @@ void FLACStreamer::push_in(FLACStreamer * _this,
                            FLAC__byte * data,
                            size_t len) {
   std::unique_lock<std::mutex> in_guard(_this->in_queue_lock);
+  std::cerr << "input_queue size() before insert: " << _this->input_queue.size()
+            << std::endl;
   _this->input_queue.push_range(data, len);
+  std::cerr << "input_queue size() after insert: " << _this->input_queue.size()
+            << std::endl;
   _this->in_queue_cv.notify_one();
 }
 
@@ -179,6 +195,7 @@ void FLACStreamer::_Transform(const FunctionCallbackInfo<Value> & args) {
 
   size_t len        = node::Buffer::Length(chunk);
   FLAC__byte * data = (FLAC__byte *) node::Buffer::Data(chunk);
+  std::cerr << "len: " << len << std::endl;
 
   if (!_this->metadata_sent and _this->metadata_has_been_read.load()) {
     _this->emit_metadata(_this, _thisObj, isolate);
@@ -235,8 +252,14 @@ FLAC__StreamDecoderReadStatus FLACStreamer::read_callback(FLAC__byte * buffer,
            !(done_proc = is_done_processing_read.load())) {
       in_queue_cv.wait(cond_lock);
     }
+    std::cerr << "input_queue size() before: " << input_queue.size()
+              << std::endl;
     *nbytes = input_queue.pull_range(buffer, *nbytes);
+    std::cerr << "nbytes: " << *nbytes << std::endl;
+    std::cerr << "input_queue size() after: " << input_queue.size()
+              << std::endl;
     if (done_proc) {
+      std::cerr << "here?" << std::endl;
       return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
     } else {
       return FLAC__STREAM_DECODER_READ_STATUS_CONTINUE;
@@ -259,6 +282,7 @@ FLAC__StreamDecoderWriteStatus
     std::unique_lock<std::mutex> out_guard(out_queue_lock);
     size_t blocksize         = frame->header.blocksize;
     size_t num_bytes_to_push = bits_per_sample * 8;
+    std::cerr << "blocksize: " << blocksize << std::endl;
     /* FIXME: much slower than it needs to be because you have to interleave
        samples from each channel, so we can't just use memcpy */
     for (uint16_t block = 0; block < blocksize; ++block) {
@@ -271,24 +295,6 @@ FLAC__StreamDecoderWriteStatus
 }
 
 void FLACStreamer::error_callback(FLAC__StreamDecoderErrorStatus status) {
-  std::string msg;
-  switch (status) {
-  case FLAC__STREAM_DECODER_ERROR_STATUS_BAD_HEADER:
-    msg = "BAD HEADER";
-    break;
-  case FLAC__STREAM_DECODER_ERROR_STATUS_LOST_SYNC:
-    msg = "LOST SYNC";
-    break;
-  case FLAC__STREAM_DECODER_ERROR_STATUS_FRAME_CRC_MISMATCH:
-    msg = "FRAME CRC MISMATCH";
-    break;
-  case FLAC__STREAM_DECODER_ERROR_STATUS_UNPARSEABLE_STREAM:
-    msg = "UNPARSEABLE STREAM";
-    break;
-  default:
-    msg = "ERROR UNKNOWN";
-    break;
-  }
-  /* std::cerr << msg << std::endl; */
+  throw std::runtime_error(FLAC__StreamDecoderErrorStatusString[status]);
 }
 }
