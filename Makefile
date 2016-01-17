@@ -43,7 +43,7 @@ TEST_COFFEE_BIN := $(TEST_DIR)/test.coffee
 
 all: $(COFFEE_OUT) $(CPP_OUT)
 
-test: all $(TEST_COFFEE_OUT)
+test: all $(TEST_COFFEE_OUT) $(COFFEE_CC)
 	$(COFFEE_CC) $(TEST_COFFEE_BIN)
 
 %.js: %.coffee $(COFFEE_CC)
