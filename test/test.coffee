@@ -6,7 +6,7 @@ Speaker = require 'speaker'
 filename = "#{__dirname}/01 - Never Ending Circles.flac"
 
 # TODO: fix this requirement!
-stream = new FLACStream {}, require('stream').Transform
+stream = new FLACStream {}
 stream.on 'error', (err) ->
   console.error err.stack
   process.exit -1

@@ -63,6 +63,9 @@ private:
                                  v8::Isolate *,
                                  v8::Local<v8::Function>);
 
+  static v8::Persistent<v8::Function> super_call;
+  static void SetSuper(const v8::FunctionCallbackInfo<v8::Value> &);
+
 public:
   /* maximum length of buffer this will ever push */
   static const size_t MAX_PUSH_LENGTH;

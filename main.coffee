@@ -1,5 +1,5 @@
 util = require 'util'
-{FLACStream} = require('bindings')('addon.node')
 {Transform} = require 'stream'
+FLACStream = require('bindings')('addon.node').FLACStreamerCreator(Transform)
 util.inherits(FLACStream, Transform)
 module.exports = FLACStream

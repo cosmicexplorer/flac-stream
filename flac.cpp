@@ -27,7 +27,9 @@ using v8::Exception;
 
 Persistent<Function> FLACStreamer::Constructor;
 
-constexpr size_t FLACStreamer::MAX_PUSH_LENGTH = 10e4;
+const size_t FLACStreamer::MAX_PUSH_LENGTH = 10e4;
+
+Persistent<Function> FLACStreamer::super_call;
 
 FLACStreamer::FLACStreamer()
     : FLAC::Decoder::Stream(), metadata_has_been_read(false),
@@ -62,17 +64,32 @@ void FLACStreamer::do_decode(FLACStreamer * _this) {
   _this->out_queue_cv.notify_one();
 }
 
+void FLACStreamer::SetSuper(const FunctionCallbackInfo<Value> & args) {
+  Isolate * isolate = args.GetIsolate();
+  HandleScope scope(isolate);
+  Local<Function> super(args[0]->ToObject().As<Function>());
+  super_call.Reset(isolate, super);
+
+  Local<FunctionTemplate> class_template = FunctionTemplate::New(isolate, New);
+  class_template->SetClassName(String::NewFromUtf8(isolate, "FLACStream"));
+  class_template->InstanceTemplate()->SetInternalFieldCount(17);
+  NODE_SET_PROTOTYPE_METHOD(class_template, "_transform", _Transform);
+  NODE_SET_PROTOTYPE_METHOD(class_template, "_flush", _Flush);
+  Constructor.Reset(isolate, class_template->GetFunction());
+
+  args.GetReturnValue().Set(class_template->GetFunction());
+}
+
 void FLACStreamer::Init(Local<Object> exports) {
   Isolate * isolate = exports->GetIsolate();
   HandleScope scope(isolate);
-  Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
-  tpl->SetClassName(String::NewFromUtf8(isolate, "FLACStream"));
-  tpl->InstanceTemplate()->SetInternalFieldCount(17);
 
-  NODE_SET_PROTOTYPE_METHOD(tpl, "_transform", _Transform);
-  NODE_SET_PROTOTYPE_METHOD(tpl, "_flush", _Flush);
-  Constructor.Reset(isolate, tpl->GetFunction());
-  exports->Set(String::NewFromUtf8(isolate, "FLACStream"), tpl->GetFunction());
+  Local<FunctionTemplate> setup_template =
+      FunctionTemplate::New(isolate, SetSuper);
+  Local<Function> output = setup_template->GetFunction();
+  Local<String> name = String::NewFromUtf8(isolate, "FLACStreamerCreator");
+  output->SetName(name);
+  exports->Set(name, output);
 }
 
 void FLACStreamer::New(const FunctionCallbackInfo<Value> & args) {
@@ -82,9 +99,8 @@ void FLACStreamer::New(const FunctionCallbackInfo<Value> & args) {
     FLACStreamer * obj = new FLACStreamer();
     obj->Wrap(args.This());
     auto opts           = args[0];
-    auto super          = args[1]->ToObject().As<Function>();
     Local<Value> argv[] = {opts};
-    super->Call(args.This(), 1, argv);
+    Local<Function>::New(isolate, super_call)->Call(args.This(), 1, argv);
     args.GetReturnValue().Set(args.This());
   } else {
     Local<Function> cons = Local<Function>::New(isolate, Constructor);
