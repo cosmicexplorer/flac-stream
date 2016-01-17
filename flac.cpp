@@ -53,11 +53,11 @@ void FLACStreamer::do_decode(FLACStreamer * _this) {
     }
     _this->process_until_end_of_stream();
   } catch (finished_decoding_event &) {
+  } catch (const std::exception & ex) {
+    _this->errstr = ex.what();
+    _this->is_err.store(true);
   } catch (...) {
-    auto eptr = std::current_exception();
-    try {
-      if (eptr) { std::rethrow_exception(eptr); }
-    } catch (const std::exception & ex) { _this->errstr = ex.what(); }
+    _this->errstr = "Unknown stream processing error";
     _this->is_err.store(true);
   }
   _this->is_done_processing_write.store(true);
