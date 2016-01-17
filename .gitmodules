@@ -1,0 +1,6 @@
+[submodule "deps/grin"]
+	path = deps/grin
+	url = git@github.com:cosmicexplorer/grin.git
+[submodule "deps/gRin"]
+	path = deps/gRin
+	url = git@github.com:cosmicexplorer/gRin.git

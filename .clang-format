@@ -11,6 +11,7 @@ AllowShortFunctionsOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: true
 AlwaysBreakAfterDefinitionReturnType: false
 AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: true
 BinPackParameters: false
 BreakBeforeBinaryOperators: false
 BreakBeforeBraces: Attach

@@ -16,6 +16,7 @@ endif
 NPM_DIR := node_modules
 NPM_BIN := $(NPM_DIR)/.bin
 COFFEE_CC := $(NPM_BIN)/coffee
+NAN_DIR := $(NPM_DIR)/nan
 
 DEPS_DIR := deps
 FLAC_DIR := $(DEPS_DIR)/flac
@@ -51,7 +52,7 @@ test: all $(TEST_COFFEE_OUT)
 %.o: %.cpp
 	$(CXX) -c $< -o $@ $(CXX_FLAGS)
 
-$(NODE_CXX_MAKEFILE): $(NODE_BINDINGS)
+$(NODE_CXX_MAKEFILE): $(NODE_BINDINGS) $(NAN_DIR)
 	node-gyp configure $(NODE_GYP_FLAGS)
 
 $(NODE_CXX_MODULE): $(NODE_CXX_MAKEFILE) $(CPP_IN)
@@ -61,7 +62,7 @@ $(NODE_CXX_MODULE): $(NODE_CXX_MAKEFILE) $(CPP_IN)
 $(TEST_CPP_BIN): $(TEST_CPP_OUT) $(FLAC_SO)
 	$(CXX) $^ -o $@ $(addprefix -l,$(LIBS)) $(CXX_FLAGS)
 
-$(COFFEE_CC):
+$(COFFEE_CC) $(NAN_DIR):
 	npm install
 
 $(FLAC_SO):

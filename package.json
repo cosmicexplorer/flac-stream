@@ -1,5 +1,5 @@
 {
-  "name": "tune-server",
+  "name": "flac-stream",
   "version": "0.0.0",
   "license": "GPL-3.0",
   "repository": "git@github.com:cosmicexplorer/flac-stream.git",
@@ -9,6 +9,7 @@
     "speaker": "^0.2.6"
   },
   "dependencies": {
-    "bindings": "^1.2.1"
+    "bindings": "^1.2.1",
+    "nan": "^2.2.0"
   }
 }
