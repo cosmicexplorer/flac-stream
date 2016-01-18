@@ -23,6 +23,9 @@ FLAC_DIR := $(DEPS_DIR)/flac
 FLAC_SO_DIR := $(FLAC_DIR)/src/libFLAC++/.libs
 FLAC_SO := $(FLAC_SO_DIR)/libFLAC++.so
 
+GRIN_DIR := $(DEPS_DIR)/gRin
+GRIN_FILES := $(wildcard $(GRIN_DIR)/*.tpp) $(wildcard $(GRIN_DIR)/*.hpp)
+
 NODE_BINDINGS := binding.gyp
 NODE_BUILD_DIR := build
 NODE_CXX_MAKEFILE := $(NODE_BUILD_DIR)/Makefile
@@ -55,7 +58,7 @@ test: all $(TEST_COFFEE_OUT) $(COFFEE_CC)
 $(NODE_CXX_MAKEFILE): $(NODE_BINDINGS) $(NAN_DIR)
 	node-gyp configure $(NODE_GYP_FLAGS)
 
-$(NODE_CXX_MODULE): $(NODE_CXX_MAKEFILE) $(CPP_IN)
+$(NODE_CXX_MODULE): $(NODE_CXX_MAKEFILE) $(CPP_IN) $(GRIN_FILES)
 	node-gyp build $(NODE_GYP_FLAGS)
 
 # TODO: do we link to this one, or just require libflac to be installed?

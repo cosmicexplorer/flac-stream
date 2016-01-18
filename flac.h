@@ -9,6 +9,8 @@
 #include <atomic>
 #include <string>
 
+/* TODO: remove this! */
+#include <iostream>
 #include "deps/gRin/gRin.hpp"
 
 #include <node.h>

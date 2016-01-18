@@ -3,9 +3,6 @@
 #include <node_buffer.h>
 #include "flac.h"
 
-/* TODO: remove this! */
-#include <iostream>
-
 static_assert(sizeof(char) == sizeof(FLAC__byte), "invalid char size");
 static_assert(sizeof(FLAC__byte) == 1, "invalid byte size");
 
@@ -142,11 +139,7 @@ void FLACStreamer::push_in(FLACStreamer * _this,
                            FLAC__byte * data,
                            size_t len) {
   std::unique_lock<std::mutex> in_guard(_this->in_queue_lock);
-  std::cerr << "input_queue size() before insert: " << _this->input_queue.size()
-            << std::endl;
   _this->input_queue.push_range(data, len);
-  std::cerr << "input_queue size() after insert: " << _this->input_queue.size()
-            << std::endl;
   _this->in_queue_cv.notify_one();
 }
 
@@ -268,14 +261,8 @@ FLAC__StreamDecoderReadStatus FLACStreamer::read_callback(FLAC__byte * buffer,
            !(done_proc = is_done_processing_read.load())) {
       in_queue_cv.wait(cond_lock);
     }
-    std::cerr << "input_queue size() before: " << input_queue.size()
-              << std::endl;
     *nbytes = input_queue.pull_range(buffer, *nbytes);
-    std::cerr << "nbytes: " << *nbytes << std::endl;
-    std::cerr << "input_queue size() after: " << input_queue.size()
-              << std::endl;
     if (done_proc) {
-      std::cerr << "here?" << std::endl;
       return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
     } else {
       return FLAC__STREAM_DECODER_READ_STATUS_CONTINUE;
