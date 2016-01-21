@@ -158,6 +158,7 @@ void FLACStreamer::push_single(FLACStreamer * _this,
   size_t num_written = _this->output_queue.pull_range(
       reinterpret_cast<FLAC__byte *>(node::Buffer::Data(push_buf)),
       num_to_write);
+  std::cerr << "num_written: " << num_written << std::endl;
   if (num_to_write != num_written) {
     throw std::runtime_error(
         "number of bytes written to output buffer does not match expected");
@@ -185,6 +186,7 @@ void FLACStreamer::push_out_until_end(FLACStreamer * _this,
                                       Local<Object> _thisObj,
                                       Isolate * isolate,
                                       Local<Function> cb) {
+  std::cerr << "YO" << std::endl;
   size_t out_queue_len;
   std::unique_lock<std::mutex> cond_lock(_this->out_queue_lock);
   _this->out_queue_cv.wait(
@@ -261,7 +263,10 @@ FLAC__StreamDecoderReadStatus FLACStreamer::read_callback(FLAC__byte * buffer,
       return !input_queue.empty() or
              (done_proc = is_done_processing_read.load());
     });
+    std::cerr << "size() before: " << input_queue.size() << std::endl;
     *nbytes = input_queue.pull_range(buffer, *nbytes);
+    std::cerr << "{*nbytes: " << *nbytes << ", size(): " << input_queue.size()
+              << "}" << std::endl;
     if (done_proc) {
       return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
     } else {
@@ -283,8 +288,11 @@ FLAC__StreamDecoderWriteStatus
     }
     std::unique_lock<std::mutex> out_guard(out_queue_lock);
     size_t blocksize         = frame->header.blocksize;
-    std::cerr << "blocksize: " << blocksize << std::endl;
     size_t num_bytes_to_push = bits_per_sample / 8;
+    std::cerr << "{blocksize: " << blocksize
+              << ", size() before write: " << output_queue.size()
+              << ", num_bytes_to_push: " << num_bytes_to_push << "}"
+              << std::endl;
     /* FIXME: much slower than it needs to be because you have to interleave
        samples from each channel, so we can't just use memcpy */
     for (unsigned int block = 0; block < blocksize; ++block) {
@@ -297,6 +305,7 @@ FLAC__StreamDecoderWriteStatus
             num_bytes_to_push);
       }
     }
+    std::cerr << "size() after write: " << output_queue.size() << std::endl;
   }
   return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }

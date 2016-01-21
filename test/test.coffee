@@ -13,4 +13,5 @@ stream.on 'error', (err) ->
 stream.on 'metadata', console.log
 
 console.log (stream instanceof require('stream').Transform)
-fs.createReadStream(filename).pipe(stream).pipe(new Speaker)
+# fs.createReadStream(filename).pipe(stream).pipe(new Speaker)
+fs.createReadStream(filename).pipe(stream).pipe(fs.createWriteStream 'test.out')

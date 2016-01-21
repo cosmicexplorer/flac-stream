@@ -26,6 +26,7 @@ FLAC_SO := $(FLAC_SO_DIR)/libFLAC++.so
 GRIN_DIR := $(DEPS_DIR)/gRin
 GRIN_FILES := $(wildcard $(GRIN_DIR)/*.tpp) $(wildcard $(GRIN_DIR)/*.hpp)
 
+NODE := /home/cosmicexplorer/tools/node/out/Debug/node
 NODE_BINDINGS := binding.gyp
 NODE_BUILD_DIR := build
 NODE_CXX_MAKEFILE := $(NODE_BUILD_DIR)/Makefile
@@ -47,7 +48,7 @@ TEST_COFFEE_BIN := $(TEST_DIR)/test.coffee
 all: $(COFFEE_OUT) $(CPP_OUT)
 
 test: all $(TEST_COFFEE_OUT) $(COFFEE_CC)
-	$(COFFEE_CC) $(TEST_COFFEE_BIN)
+	$(NODE) $(TEST_COFFEE_OUT)
 
 %.js: %.coffee $(COFFEE_CC)
 	$(COFFEE_CC) -bc --no-header $<
