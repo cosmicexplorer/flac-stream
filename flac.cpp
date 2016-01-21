@@ -155,7 +155,8 @@ void FLACStreamer::push_single(FLACStreamer * _this,
     throw std::runtime_error("buffer could not be allocated");
   }
   size_t num_written = _this->output_queue.pull_range(
-      node::Buffer::Data(push_buf), num_to_write);
+      reinterpret_cast<FLAC__byte *>(node::Buffer::Data(push_buf)),
+      num_to_write);
   if (num_to_write != num_written) {
     throw std::runtime_error(
         "number of bytes written to output buffer does not match expected");
@@ -253,7 +254,6 @@ void FLACStreamer::metadata_callback(const FLAC__StreamMetadata * metadata) {
 FLAC__StreamDecoderReadStatus FLACStreamer::read_callback(FLAC__byte * buffer,
                                                           size_t * nbytes) {
   if (do_quit.load()) { throw finished_decoding_event(); }
-  /* consider returning abort on exception (with catch(...)) */
   if (buffer and nbytes and (*nbytes > 0)) {
     std::unique_lock<std::mutex> cond_lock(in_queue_lock);
     bool done_proc;
@@ -275,7 +275,6 @@ FLAC__StreamDecoderReadStatus FLACStreamer::read_callback(FLAC__byte * buffer,
 FLAC__StreamDecoderWriteStatus
     FLACStreamer::write_callback(const FLAC__Frame * frame,
                                  const FLAC__int32 * const * buffer) {
-  /* consider returning abort on exception (with catch(...)) */
   if (frame and buffer) {
     /* need to know number of channels to write */
     if (!metadata_has_been_read.load()) {
@@ -284,13 +283,18 @@ FLAC__StreamDecoderWriteStatus
     }
     std::unique_lock<std::mutex> out_guard(out_queue_lock);
     size_t blocksize         = frame->header.blocksize;
-    size_t num_bytes_to_push = bits_per_sample * 8;
     std::cerr << "blocksize: " << blocksize << std::endl;
+    size_t num_bytes_to_push = bits_per_sample / 8;
     /* FIXME: much slower than it needs to be because you have to interleave
        samples from each channel, so we can't just use memcpy */
-    for (uint16_t block = 0; block < blocksize; ++block) {
-      for (uint16_t channel = 0; channel < channels; ++channel) {
-        output_queue.push_range(buffer[channel] + block, num_bytes_to_push);
+    for (unsigned int block = 0; block < blocksize; ++block) {
+      for (unsigned int channel = 0; channel < channels; ++channel) {
+        /* auto res = buffer[channel][block];
+           output_queue.push_back((unsigned char) res);
+           output_queue.push_back((unsigned char) res >> 8); */
+        output_queue.push_range(
+            reinterpret_cast<const unsigned char *>(buffer[channel] + block),
+            num_bytes_to_push);
       }
     }
   }
