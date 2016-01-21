@@ -57,6 +57,7 @@ void FLACStreamer::do_decode(FLACStreamer * _this) {
     _this->errstr = "Unknown stream processing error";
     _this->is_err.store(true);
   }
+  std::unique_lock<std::mutex> out_guard(_this->out_queue_lock);
   _this->is_done_processing_write.store(true);
   _this->out_queue_cv.notify_one();
 }
