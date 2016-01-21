@@ -187,9 +187,8 @@ void FLACStreamer::push_out_until_end(FLACStreamer * _this,
                                       Local<Function> cb) {
   size_t out_queue_len;
   std::unique_lock<std::mutex> cond_lock(_this->out_queue_lock);
-  while (!_this->is_done_processing_write.load()) {
-    _this->out_queue_cv.wait(cond_lock);
-  }
+  _this->out_queue_cv.wait(
+      cond_lock, [&]() { return _this->is_done_processing_write.load(); });
   while ((out_queue_len = _this->output_queue.size()) > 0) {
     push_single(_this, _thisObj, isolate, out_queue_len);
   }
@@ -258,10 +257,10 @@ FLAC__StreamDecoderReadStatus FLACStreamer::read_callback(FLAC__byte * buffer,
   if (buffer and nbytes and (*nbytes > 0)) {
     std::unique_lock<std::mutex> cond_lock(in_queue_lock);
     bool done_proc;
-    while (input_queue.empty() and
-           !(done_proc = is_done_processing_read.load())) {
-      in_queue_cv.wait(cond_lock);
-    }
+    in_queue_cv.wait(cond_lock, [&]() {
+      return !input_queue.empty() or
+             (done_proc = is_done_processing_read.load());
+    });
     *nbytes = input_queue.pull_range(buffer, *nbytes);
     if (done_proc) {
       return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
